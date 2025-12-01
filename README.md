@@ -17,7 +17,7 @@ You need to have your C++ compiler set up already. There are many good tutorials
 pacman -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw
 ````
 
-you will also nead to clone the imgui repository from github into the src folder:
+you will also need to clone the imgui repository from GitHub into the src folder:
 ````
 git clone https://github.com/ocornut/imgui.git
 ````
@@ -29,4 +29,4 @@ cmake -G "MinGW Makefiles" ..
 mingw32-make
 ````
 
-in many cases you will nead to have the openGL support libs in your build folder, because sometimes adding /bin to path is not enough. in that case just copy the .dll files from /bin to /build. The files you need to copy are glew32.dll, glfw3.dll, and opengl32.dll
+in many cases you will need to have the openGL support libs in your build folder, because sometimes adding /bin to path is not enough. In that case copy the .dll files from /bin to /build. The files you need to copy are glew32.dll, glfw3.dll, and opengl32.dll
