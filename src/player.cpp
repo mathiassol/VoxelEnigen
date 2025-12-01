@@ -218,9 +218,9 @@ void Player::rebuildChunkMesh(int worldX, int worldZ) {
     int cz = getChunkCoord((float)worldZ);
     ManagedChunk* mc = worldRef->getChunk(cx, cz);
     if (mc) {
-        mc->mesh.generateMesh(mc->chunk, worldRef);
-        mc->meshDirty = false;
-        mc->meshUploaded = true;
+        mc->meshDirty = true;
+        mc->meshUploaded = false;
+        mc->inMeshQueue = false;
     }
 }
 

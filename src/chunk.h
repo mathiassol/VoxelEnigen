@@ -24,10 +24,14 @@ struct ChunkMesh {
     std::vector<float> vertices;
     unsigned int VAO = 0, VBO = 0;
 
+    static std::vector<float> buildVertices(Chunk& chunk, ChunkManager* manager);
+
     void generateMesh(Chunk& chunk, ChunkManager* manager);
+
     void appendFaceWithAtlas(float face[30], int x, int y, int z, int chunkX, int chunkZ,
                             int chunkWidth, int chunkDepth, Block& block, int faceIndex);
-    void uploadToGPU();
+
+    void uploadToGPU(const std::vector<float>& newVertices); // prebuild vertex buffer
     void draw();
 };
 
@@ -39,6 +43,11 @@ struct ManagedChunk {
     bool structuresGenerated = false;
     bool meshUploaded = false;
     bool meshDirty = true;
+
+    // Async scheduling flags
+    bool inTerrainQueue = false;
+    bool inStructQueue = false;
+    bool inMeshQueue = false;
 
     ManagedChunk(int cx, int cz);
 };

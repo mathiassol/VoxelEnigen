@@ -3,6 +3,104 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <functional>
+
+// Async
+class ThreadPool {
+public:
+    explicit ThreadPool(size_t threadCount = std::thread::hardware_concurrency()) {
+        if (threadCount == 0) threadCount = 1;
+        for (size_t i = 0; i < threadCount; ++i) {
+            workers.emplace_back([this]{ this->workerLoop(); });
+        }
+    }
+    ~ThreadPool() {
+        stop.store(true);
+        cv.notify_all();
+        for (auto& t : workers) if (t.joinable()) t.join();
+    }
+    void enqueue(std::function<void()> job) {
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            jobs.push(std::move(job));
+        }
+        cv.notify_one();
+    }
+private:
+    void workerLoop() {
+        while (!stop.load()) {
+            std::function<void()> job;
+            {
+                std::unique_lock<std::mutex> lock(mtx);
+                cv.wait(lock, [this]{ return stop.load() || !jobs.empty(); });
+                if (stop.load()) break;
+                job = std::move(jobs.front());
+                jobs.pop();
+            }
+            if (job) job();
+        }
+    }
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> jobs;
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> stop{false};
+};
+
+void CompletedMeshQueue::push(CompletedMesh m) {
+    std::lock_guard<std::mutex> lock(mtx);
+    q.push(std::move(m));
+}
+
+bool CompletedMeshQueue::try_pop(CompletedMesh& out) {
+    std::lock_guard<std::mutex> lock(mtx);
+    if (q.empty()) return false;
+    out = std::move(q.front());
+    q.pop();
+    return true;
+}
+
+struct CompletedTerrain {
+    int cx;
+    int cz;
+};
+
+class CompletedTerrainQueue {
+public:
+    void push(CompletedTerrain t) {
+        std::lock_guard<std::mutex> lock(mtx);
+        q.push(t);
+    }
+    bool try_pop(CompletedTerrain& out) {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (q.empty()) return false;
+        out = q.front();
+        q.pop();
+        return true;
+    }
+private:
+    std::mutex mtx;
+    std::queue<CompletedTerrain> q;
+};
+
+CompletedTerrainQueue g_completedTerrain;
+
+static ThreadPool* g_pool = nullptr;
+ThreadPool& getThreadPool() {
+    if (!g_pool) {
+        size_t n = std::thread::hardware_concurrency();
+        size_t threads = (n > 1) ? (n - 1) : 1;
+        g_pool = new ThreadPool(threads);
+    }
+    return *g_pool;
+}
+
+CompletedMeshQueue g_completedMeshes;
 
 int perm[512];
 
@@ -306,14 +404,25 @@ void generateTrees(Chunk& chunk, ChunkManager* manager) {
     for (auto &p : modifiedChunks) {
         ManagedChunk* m = manager->getChunk(p.first, p.second);
         if (m) {
-            m->mesh.generateMesh(m->chunk, manager);
-            m->meshDirty = false;
-            m->meshUploaded = true;
+            m->meshDirty = true;
+            m->meshUploaded = false;
         }
     }
 }
 
 void updateChunks(ChunkManager& manager, glm::vec3 pos, int radius, unsigned int shader) {
+    // Process completed terrain generation
+    while (true) {
+        CompletedTerrain t;
+        if (!g_completedTerrain.try_pop(t)) break;
+        ManagedChunk* mc = manager.getChunk(t.cx, t.cz);
+        if (mc) {
+            mc->inTerrainQueue = false;
+            mc->terrainGenerated = true;
+            mc->meshDirty = true;
+        }
+    }
+
     int camChunkX = getChunkCoord(pos.x);
     int camChunkZ = getChunkCoord(pos.z);
 
@@ -331,8 +440,12 @@ void updateChunks(ChunkManager& manager, glm::vec3 pos, int radius, unsigned int
 
     std::vector<std::pair<int,int>> toRemove;
     for (auto& pair : manager.chunks) {
-        if (shouldExist.find(pair.first) == shouldExist.end())
-            toRemove.push_back(pair.first);
+        if (shouldExist.find(pair.first) == shouldExist.end()) {
+            // Do not remove chunks that are currently being processed
+            if (!pair.second->inTerrainQueue && !pair.second->inMeshQueue) {
+                toRemove.push_back(pair.first);
+            }
+        }
     }
     for (auto& key : toRemove) {
         manager.removeChunk(key.first, key.second);
@@ -352,10 +465,15 @@ void updateChunks(ChunkManager& manager, glm::vec3 pos, int radius, unsigned int
     // TERRAIN PASS
     for (auto& pair : manager.chunks) {
         ManagedChunk* mc = pair.second;
-        if (!mc->terrainGenerated) {
-            generateTerrainForChunk(mc->chunk);
-            mc->terrainGenerated = true;
-            mc->meshDirty = true;
+        if (!mc->terrainGenerated && !mc->inTerrainQueue) {
+            mc->inTerrainQueue = true;
+            int cx = mc->chunk.chunkX;
+            int cz = mc->chunk.chunkZ;
+
+            getThreadPool().enqueue([mc, cx, cz]() {
+                generateTerrainForChunk(mc->chunk);
+                g_completedTerrain.push({cx, cz});
+            });
         }
     }
 
@@ -370,10 +488,25 @@ void updateChunks(ChunkManager& manager, glm::vec3 pos, int radius, unsigned int
             ManagedChunk* mc = manager.getChunk(cx, cz);
             if (!mc) continue;
 
-            if (!mc->structuresGenerated) {
-                generateTrees(mc->chunk, &manager);
-                mc->structuresGenerated = true;
-                mc->meshDirty = true;
+            if (mc->terrainGenerated && !mc->structuresGenerated) {
+                bool neighborsReady = true;
+                for (int nx = -1; nx <= 1; ++nx) {
+                    for (int nz = -1; nz <= 1; ++nz) {
+                        if (nx == 0 && nz == 0) continue;
+                        ManagedChunk* n = manager.getChunk(cx + nx, cz + nz);
+                        if (!n || !n->terrainGenerated || n->inTerrainQueue) {
+                            neighborsReady = false;
+                            break;
+                        }
+                    }
+                    if (!neighborsReady) break;
+                }
+
+                if (neighborsReady) {
+                    generateTrees(mc->chunk, &manager);
+                    mc->structuresGenerated = true;
+                    mc->meshDirty = true;
+                }
             }
         }
     }
@@ -382,10 +515,22 @@ void updateChunks(ChunkManager& manager, glm::vec3 pos, int radius, unsigned int
     for (auto& p : shouldExist) {
         auto mc = manager.getChunk(p.first, p.second);
         if (!mc) continue;
-        if (!mc->meshUploaded || mc->meshDirty) {
-            mc->mesh.generateMesh(mc->chunk, &manager);
-            mc->meshDirty = false;
-            mc->meshUploaded = true;
+        
+        // Only mesh if terrain is ready
+        if (!mc->terrainGenerated) continue;
+        // Ideally wait for structures too, to avoid double-meshing pop-in
+        if (!mc->structuresGenerated) continue;
+
+        if ((!mc->meshUploaded || mc->meshDirty) && !mc->inMeshQueue) {
+            mc->inMeshQueue = true;
+            int cx = p.first;
+            int cz = p.second;
+            getThreadPool().enqueue([cx, cz, &manager]() {
+                auto m = manager.getChunk(cx, cz);
+                if (!m) return;
+                auto verts = ChunkMesh::buildVertices(m->chunk, &manager);
+                g_completedMeshes.push({cx, cz, std::move(verts)});
+            });
         }
     }
 }

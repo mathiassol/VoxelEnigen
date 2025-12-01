@@ -367,11 +367,6 @@ int main() {
     std::cout << "Controls:" << std::endl;
     std::cout << "  WASD - Move" << std::endl;
     std::cout << "  Space - Jump (Normal mode) / Up (Fly mode)" << std::endl;
-    std::cout << "  Shift - Down (Fly mode)" << std::endl;
-    std::cout << "  Ctrl - Sprint (Normal mode)" << std::endl;
-    std::cout << "  F - Toggle movement mode" << std::endl;
-    std::cout << "  ESC - Pause menu" << std::endl;
-    std::cout << "  F11 - Toggle fullscreen" << std::endl;
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -426,12 +421,17 @@ int main() {
             1, GL_FALSE, glm::value_ptr(projection)
         );
 
-        int camChunkX = getChunkCoord(player.position.x);
-        int camChunkZ = getChunkCoord(player.position.z);
-        if (camChunkX != lastCamChunkX || camChunkZ != lastCamChunkZ) {
-            updateChunks(chunkManager, player.position, renderDistance, renderer.getShaderProgram());
-            lastCamChunkX = camChunkX;
-            lastCamChunkZ = camChunkZ;
+        updateChunks(chunkManager, player.position, renderDistance, renderer.getShaderProgram());
+
+        while (true) {
+            CompletedMesh m;
+            if (!g_completedMeshes.try_pop(m)) break;
+            ManagedChunk* mc = chunkManager.getChunk(m.cx, m.cz);
+            if (!mc) continue;
+            mc->mesh.uploadToGPU(m.vertices);
+            mc->meshDirty = false;
+            mc->meshUploaded = true;
+            mc->inMeshQueue = false;
         }
 
         glBindTexture(GL_TEXTURE_2D, renderer.getAtlasTexture());

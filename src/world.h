@@ -2,6 +2,9 @@
 #include "chunk.h"
 #include <unordered_map>
 #include <set>
+#include <vector>
+#include <queue>
+#include <mutex>
 #include <glm/glm.hpp>
 
 struct pair_hash {
@@ -28,6 +31,23 @@ struct ChunkManager {
 
     ~ChunkManager();
 };
+
+struct CompletedMesh {
+    int cx;
+    int cz;
+    std::vector<float> vertices;
+};
+class CompletedMeshQueue {
+public:
+    void push(CompletedMesh m);
+    bool try_pop(CompletedMesh& out);
+private:
+    std::mutex mtx;
+    std::queue<CompletedMesh> q;
+};
+class ThreadPool;
+ThreadPool& getThreadPool();
+extern CompletedMeshQueue g_completedMeshes;
 
 // Terrain generation
 void initPerlin();

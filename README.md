@@ -28,7 +28,7 @@ windows (MSYS2)
 ````
 pacman -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-cmake
 pacman -S mingw-w64-x86_64-toolchain
-````
+````[stb_image.h](src/stbimage/stb_image.h)
 3. close the repository:
 ````bash
 git clone https://github.com/mathiassol/VoxelEnigen.git
@@ -50,5 +50,5 @@ mingw32-make
 6. Handle DLL dependencies:
    If the executable doesn't run, copy these DLLs from your MSYS2 installation's /mingw64/bin folder to your /build folder:
 
-glew32.dll
+glew32.dll"
 glfw3.dll

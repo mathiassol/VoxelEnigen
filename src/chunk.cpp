@@ -104,9 +104,11 @@ void ChunkMesh::appendFaceWithAtlas(float face[30], int x, int y, int z, int chu
     }
 }
 
-void ChunkMesh::uploadToGPU() {
-    if(VAO == 0) glGenVertexArrays(1, &VAO);
-    if(VBO == 0) glGenBuffers(1, &VBO);
+void ChunkMesh::uploadToGPU(const std::vector<float>& newVertices) {
+    if (VAO == 0) glGenVertexArrays(1, &VAO);
+    if (VBO == 0) glGenBuffers(1, &VBO);
+
+    vertices = newVertices;
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -123,8 +125,9 @@ void ChunkMesh::draw() {
     glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 5);
 }
 
-void ChunkMesh::generateMesh(Chunk& chunk, ChunkManager* manager) {
-    vertices.clear();
+std::vector<float> ChunkMesh::buildVertices(Chunk& chunk, ChunkManager* manager) {
+    ChunkMesh tmp;
+    tmp.vertices.clear();
 
     ManagedChunk* neighborLeft  = manager->getChunk(chunk.chunkX - 1, chunk.chunkZ);
     ManagedChunk* neighborRight = manager->getChunk(chunk.chunkX + 1, chunk.chunkZ);
@@ -148,17 +151,22 @@ void ChunkMesh::generateMesh(Chunk& chunk, ChunkManager* manager) {
                 Block& block = chunk.getBlock(x, y, z);
                 if (block.type == AIR) continue;
 
-                if (isAir(x, y, z - 1)) appendFaceWithAtlas(cubeFaces[0], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 0);
-                if (isAir(x, y, z + 1)) appendFaceWithAtlas(cubeFaces[1], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 1);
-                if (isAir(x - 1, y, z)) appendFaceWithAtlas(cubeFaces[2], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 2);
-                if (isAir(x + 1, y, z)) appendFaceWithAtlas(cubeFaces[3], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 3);
-                if (isAir(x, y - 1, z)) appendFaceWithAtlas(cubeFaces[4], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 4);
-                if (isAir(x, y + 1, z)) appendFaceWithAtlas(cubeFaces[5], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 5);
+                if (isAir(x, y, z - 1)) tmp.appendFaceWithAtlas(cubeFaces[0], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 0);
+                if (isAir(x, y, z + 1)) tmp.appendFaceWithAtlas(cubeFaces[1], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 1);
+                if (isAir(x - 1, y, z)) tmp.appendFaceWithAtlas(cubeFaces[2], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 2);
+                if (isAir(x + 1, y, z)) tmp.appendFaceWithAtlas(cubeFaces[3], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 3);
+                if (isAir(x, y - 1, z)) tmp.appendFaceWithAtlas(cubeFaces[4], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 4);
+                if (isAir(x, y + 1, z)) tmp.appendFaceWithAtlas(cubeFaces[5], x, y, z, chunk.chunkX, chunk.chunkZ, chunk.width, chunk.depth, block, 5);
             }
         }
     }
 
-    uploadToGPU();
+    return std::move(tmp.vertices);
+}
+
+void ChunkMesh::generateMesh(Chunk& chunk, ChunkManager* manager) {
+    auto built = ChunkMesh::buildVertices(chunk, manager);
+    uploadToGPU(built);
 }
 
 ManagedChunk::ManagedChunk(int cx, int cz) : chunk(cx, cz, 16, 16, 128) {}
