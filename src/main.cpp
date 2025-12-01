@@ -352,7 +352,7 @@ int main() {
     player.setActiveWorld(&chunkManager);
     player.setRaycastOriginOffset(glm::vec3(0.5f, 0.5f, 0.5f));
 
-    int renderDistance = 5;
+    int renderDistance = 16;
     updateChunks(chunkManager, player.position, renderDistance, renderer.getShaderProgram());
 
     float deltaTime = 0.0f;

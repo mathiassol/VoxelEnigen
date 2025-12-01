@@ -52,7 +52,7 @@ public:
     float walkSpeed = 4.3f;
     float sprintSpeed = 5.6f;
     float flySpeed = 10.0f;
-    float jumpVelocity = 8.0f;
+    float jumpVelocity = 7.0f;
     float gravity = -20.0f;
     
     Player(glm::vec3 startPos = glm::vec3(0.0f, 75.0f, 0.0f));
