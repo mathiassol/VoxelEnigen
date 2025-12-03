@@ -278,6 +278,11 @@ void generateTerrainForChunk(Chunk& chunk) {
             float hillOnlyUp = ((hillN + 1.0f) * 0.5f) * hillAmp;
             float hillOffset = hillOnlyUp * hillMask;
 
+
+
+            float mountMask = smoothstepf(maskThreshold, maskThreshold + maskFeather, mask01);
+
+
             int terrainHeight = int(baseHeight + macroOffset + regionOffset + detailOffset + hillOffset);
 
             if (terrainHeight >= (int)chunk.height) terrainHeight = chunk.height - 1;
