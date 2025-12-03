@@ -18,7 +18,8 @@ struct pair_hash {
 
 enum BiomeType {
     PLAINS = 0,
-    FOREST
+    FOREST,
+    MOUNTAIN
 };
 
 struct ChunkManager {

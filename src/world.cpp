@@ -175,7 +175,22 @@ float getTerrainHeight(int worldX, int worldZ) {
     return baseHeight + n * amplitude;
 }
 
+float getMountOffset(int worldX, int worldZ) {
+    const float mountScale = 0.015f;
+    const float mountAmp   = 32.0f;
+    const float mountMask = 0.75f;
+    float mountN = perlin(worldX * mountScale - 120.0f, worldZ * mountScale + 53.0f);
+    float Offset = ((mountN - mountMask)/(1.0f - mountMask)) * mountAmp;
+    if (mountN < mountMask) {
+        Offset = 0.0f;
+    }
+    return Offset;
+}
+
 BiomeType getBiome(int worldX, int worldZ) {
+    if (getMountOffset(worldX, worldZ) != 0.0f) {
+        return MOUNTAIN;
+    }
     float scale = 0.0015f;
     float n = perlin(worldX * scale + 500, worldZ * scale + 500);
     n = (n + 1.0f) / 2.0f;
@@ -273,15 +288,16 @@ void generateTerrainForChunk(Chunk& chunk) {
             float detailN = perlin(worldX * detailScale - 120.0f, worldZ * detailScale + 53.0f);
             float detailOffset = detailN * detailAmp;
 
-            const float mountScale = 0.015f;
-            const float mountAmp   = 32.0f;
-            const float mountMask = 0.75f;
-            float mountN = perlin(worldX * mountScale - 120.0f, worldZ * mountScale + 53.0f);
+            //const float mountScale = 0.015f;
+            //const float mountAmp   = 32.0f;
+            //const float mountMask = 0.75f;
+            //float mountN = perlin(worldX * mountScale - 120.0f, worldZ * mountScale + 53.0f);
             //float mountOffset = pow(((mountN - mountMask)/mountMask),0.9) * mountAmp;
-            float mountOffset = ((mountN - mountMask)/(1.0f - mountMask)) * mountAmp;
-            if (mountN < mountMask) {
-                mountOffset = 0.0f;
-            }
+            //float mountOffset = ((mountN - mountMask)/(1.0f - mountMask)) * mountAmp;
+            //if (mountN < mountMask) {
+            //    mountOffset = 0.0f;
+            //}
+            float mountOffset = getMountOffset(worldX, worldZ);
 
             const float hillScale = 0.07f;
             const float hillAmp   = 14.0f;
@@ -311,6 +327,11 @@ void generateTerrainForChunk(Chunk& chunk) {
             for (int y = 0; y < (int)chunk.height; y++) {
                 if (y > terrainHeight)
                     chunk.setBlock(x, y, z, AIR);
+                else if (mountOffset > 0.0f)
+                    if (y == terrainHeight)
+                        chunk.setBlock(x, y, z, DIRT);
+                    else
+                        chunk.setBlock(x, y, z, STONE);
                 else if (y == terrainHeight)
                     chunk.setBlock(x, y, z, GRASS);
                 else if (y >= terrainHeight - dirtDepth)
