@@ -31,7 +31,6 @@ add_executable(app
         src/world.cpp
         src/player.cpp
         src/texture_atlas.cpp
-        src/SimplexNoise.cpp
         ${IMGUI_SOURCES}
 )
 

@@ -1,5 +1,4 @@
 #include "world.h"
-#include "SimplexNoise.h"
 #include <cmath>
 #include <cstdlib>
 #include <vector>
