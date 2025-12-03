@@ -24,31 +24,33 @@ you need a c++ compiler.
 ### installation
 windows (MSYS2)
 1. install msys2 from https://www.msys2.org/
-2. open msys2 and install the packages:
+2. open msys2 MINGW64(recomended) and install the packages:
 ````
-pacman -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-cmake
+pacman -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-cmake mingw-w64-x86_64-glm
 pacman -S mingw-w64-x86_64-toolchain
 ````
-3. close the repository:
+3. add "C:\msys64\mingw64\bin" to path
+   
+4. close the repository:
 ````bash
 git clone https://github.com/mathiassol/VoxelEnigen.git
 cd VoxelEnigen
 ````
 
-4. clone imgui repository into src:
+5. clone imgui repository into src:
 ```` bash
 cd src
 git clone https://github.com/ocornut/imgui.git
 ````
-5. build the project:
+6. build the project:
 ```` bash
 mkdir build
 cd build
 cmake -G "MinGW Makefiles" ..
 mingw32-make
 ````
-6. Handle DLL dependencies:
-   If the executable doesn't run, copy these DLLs from your MSYS2 installation's /mingw64/bin folder to your /build folder:
+7. Handle DLL dependencies:
+   If the executable doesn't run, copy these DLLs from your MSYS2 installation's /mingw64/bin folder to your /build folder
 
 
 
