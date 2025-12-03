@@ -24,7 +24,7 @@ you need a c++ compiler.
 ### installation
 windows (MSYS2)
 1. install msys2 from https://www.msys2.org/
-2. open msys2 and install the packages:
+2. open msys2 MINGW64(recomended) and install the packages:
 ````
 pacman -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-cmake
 pacman -S mingw-w64-x86_64-toolchain
