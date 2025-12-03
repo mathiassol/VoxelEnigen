@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <functional>
+#include<cmath>
 
 // Async
 class ThreadPool {
@@ -272,13 +273,26 @@ void generateTerrainForChunk(Chunk& chunk) {
             float detailN = perlin(worldX * detailScale - 120.0f, worldZ * detailScale + 53.0f);
             float detailOffset = detailN * detailAmp;
 
+            const float mountScale = 0.015f;
+            const float mountAmp   = 32.0f;
+            const float mountMask = 0.75f;
+            float mountN = perlin(worldX * mountScale - 120.0f, worldZ * mountScale + 53.0f);
+            //float mountOffset = pow(((mountN - mountMask)/mountMask),0.9) * mountAmp;
+            float mountOffset = ((mountN - mountMask)/(1.0f - mountMask)) * mountAmp;
+            if (mountN < mountMask) {
+                mountOffset = 0.0f;
+            }
+
             const float hillScale = 0.07f;
             const float hillAmp   = 14.0f;
             float hillN = perlin(worldX * hillScale + 777.0f, worldZ * hillScale - 333.0f);
             float hillOnlyUp = ((hillN + 1.0f) * 0.5f) * hillAmp;
             float hillOffset = hillOnlyUp * hillMask;
 
-            int terrainHeight = int(baseHeight + macroOffset + regionOffset + detailOffset + hillOffset);
+            //int terrainHeight = int(baseHeight + macroOffset + regionOffset + detailOffset + hillOffset);
+            int terrainHeight = int(baseHeight + macroOffset + regionOffset + detailOffset + hillOffset + mountOffset);
+            //int terrainHeight = int(baseHeight + macroOffset + mountOffset + regionOffset + hillOffset);
+            //int terrainHeight = int(mountOffset);
 
             if (terrainHeight >= (int)chunk.height) terrainHeight = chunk.height - 1;
 
