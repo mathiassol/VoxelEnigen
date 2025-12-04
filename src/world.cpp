@@ -431,16 +431,16 @@ void generateTerrainForChunk(Chunk& chunk) {
                     if (y == terrainHeight)
                         chunk.setBlock(x, y, z, DIRT);
 
-                    else if (blockNoise(x, y, z, 0.05f, 0.4f, graniteOffset))
+                    else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, graniteOffset))
                         chunk.setBlock(x, y, z, GRANITE);
 
-                    else if (blockNoise(x, y, z, 0.05f, 0.4f, andesiteOffset))
+                    else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, andesiteOffset))
                         chunk.setBlock(x, y, z, ANDESITE);
 
-                    else if (blockNoise(x, y, z, 0.05f, 0.4f, tuffOffset))
+                    else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, tuffOffset))
                         chunk.setBlock(x, y, z, TUFF);
 
-                    else if (blockNoise(x, y, z, 0.05f, 0.4f, dioriteOffset))
+                    else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, dioriteOffset))
                         chunk.setBlock(x, y, z, DIORITE);
 
                     else
@@ -453,16 +453,16 @@ void generateTerrainForChunk(Chunk& chunk) {
                 else if (y >= terrainHeight - dirtDepth)
                     chunk.setBlock(x, y, z, DIRT);
 
-                else if (blockNoise(x, y, z, 0.05f, 0.4f, graniteOffset))
+                else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, graniteOffset))
                     chunk.setBlock(x, y, z, GRANITE);
 
-                else if (blockNoise(x, y, z, 0.05f, 0.4f, andesiteOffset))
+                else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, andesiteOffset))
                     chunk.setBlock(x, y, z, ANDESITE);
 
-                else if (blockNoise(x, y, z, 0.05f, 0.4f, tuffOffset))
+                else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, tuffOffset))
                     chunk.setBlock(x, y, z, TUFF);
 
-                else if (blockNoise(x, y, z, 0.05f, 0.4f, dioriteOffset))
+                else if (blockNoise(worldX, y, worldZ, 0.05f, 0.4f, dioriteOffset))
                     chunk.setBlock(x, y, z, DIORITE);
                 
                 else
